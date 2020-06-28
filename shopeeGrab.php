@@ -84,7 +84,7 @@ class grab extends curl {
 		}
 		echo "\nShop ID :".$shop_id."\n\n";
 
-			$url_shop_collections = 'https://shopee.co.id/api/v1/shop_collections/?filter_empty=1&limit=20&offset=0&shopid='.$shop_id;
+			$url_shop_collections = 'https://shopee.co.id/api/v2/shop/get_categories?limit=100&offset=0&shopid='.$shop_id;
 
 			$get_collections = $this->curl_sp ('GET', $url_shop_collections, $header=NULL, $param=NULL);
 
@@ -95,14 +95,21 @@ class grab extends curl {
 				foreach ($json_collections as $data_collections) {
 					$etalase_name  = $data_collections->name;
 					$collection_id = $data_collections->shop_collection_id;
+					$is_generated  = $data_collections->is_generated;
+
+					if($is_generated == TRUE) {
+						$type_cat = 'original_categoryid';
+					} else {
+						$type_cat = 'shop_categoryids';
+					}
 
 					$x=1;
 					while ($x<=2) {
 						if($x==1) {
-							$url_get_items = 'https://shopee.co.id/api/v2/search_items/?by=pop&limit=100&match_id='.$shop_id.'&newest=0&order=desc&page_type=shop&original_categoryid='.$collection_id.'&version=2'; //TERSEDIA                  
+							$url_get_items = 'https://shopee.co.id/api/v2/search_items/?by=pop&limit=100&match_id='.$shop_id.'&newest=0&order=desc&page_type=shop&'.$type_cat.'='.$collection_id.'&version=2'; //TERSEDIA                  
 							$item_status = "TERSEDIA"; 
 						} else {
-							$url_get_items = 'https://shopee.co.id/api/v2/search_items/?by=pop&limit=100&match_id='.$shop_id.'&newest=0&only_soldout=1&order=desc&page_type=shop&original_categoryid='.$collection_id.'&version=2'; //KOSONG                  
+							$url_get_items = 'https://shopee.co.id/api/v2/search_items/?by=pop&limit=100&match_id='.$shop_id.'&newest=0&only_soldout=1&order=desc&page_type=shop&'.$type_cat.'='.$collection_id.'&version=2'; //KOSONG                  
 							$item_status = "KOSONG"; 
 						}                       
                 
@@ -177,8 +184,8 @@ class grab extends curl {
 
 											if ($price>=$min_price && empty($variant)) {
 												echo "[".$no."-".$no_col."] id_item: ".$id_item." | item_name: ".$name_item."\n";
-												$data_save  = "shopid;itemid;name;catid;image;price;mounth_sold;historical_sold;brand;description\r\n";
-												$data_save2 = $shop_id.';'.$id_item.';'.$name_item.';'.$display_category.';https://cf.shopee.co.id/file/'.$images[0].';'.$price.';'.$sold.';'.$hist_sold.';'.$brand.';"'.str_replace('"', '', $description)."\"\r\n";
+												$data_save  = "shopid;itemid;name;catid;image;price;status;mounth_sold;historical_sold;brand;description\r\n";
+												$data_save2 = $shop_id.';'.$id_item.';'.$name_item.';'.$display_category.';https://cf.shopee.co.id/file/'.$images[0].';'.$price.';'.$item_status.';'.$sold.';'.$hist_sold.';'.$brand.';"'.str_replace('"', '', $description)."\"\r\n";
 
 												$fh = fopen("Shopee_".$shop_username."[".date('d-m-Y')."].CSV", "a");
 												
@@ -200,7 +207,7 @@ class grab extends curl {
 
 										} else { echo "No Page Found! [Get Detail Item]\n\n";}
 									}
-								} else {echo "Data Item Tidak Ditemukan!\n\n";}
+								} else { echo "Data Item Tidak Ditemukan!\n\n";}
 						} else { echo "No Page Found! [Get Items]\n\n";}
 
 						$x++;
